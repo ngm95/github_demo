@@ -14,6 +14,93 @@ public class Timer extends JFrame{
 	 */
 	private static final long serialVersionUID = 1L;
 
+public class TimeThread extends Thread  {
+		JLabel timeLabel, printLabel, textLabel;
+		JTextField tf;
+		boolean change;
+		boolean firstChange;
+		public TimeThread(JLabel timeLabel, JTextField tf, JLabel printLabel, JLabel textLabel2) {
+			super();
+			this.timeLabel = timeLabel;
+			this.tf = tf;
+			this.printLabel = printLabel;
+			this.textLabel = textLabel2;
+			change = false;
+			firstChange = false;
+		}
+		public void run() {
+			String target = tf.getText(); 
+			URL url = null;
+			URLConnection conn = null;
+			while(true) {
+				String sHour = "", sMin = "", sSec = "";
+				if (change) {
+					target = tf.getText();
+					if (!target.equals("Home") && (!target.contains("http://") && !target.contains("https://")))
+						target = "http://" + target;
+				}
+				if (!firstChange || target.equals("Home")) {
+					Calendar cal = Calendar.getInstance();
+					int hour = cal.get(Calendar.HOUR_OF_DAY); 
+					int min = cal.get(Calendar.MINUTE); 
+					int sec = cal.get(Calendar.SECOND);
+					sHour = Integer.toString(hour);
+					if (sHour.length() < 2)
+						sHour = "0" + sHour;
+					sMin = Integer.toString(min);
+					if (sMin.length() < 2)
+						sMin = "0" + sMin;
+					sSec = Integer.toString(sec);
+					if (sSec.length() < 2)
+						sSec = "0" + sSec;
+					printLabel.setText(cal.getTime().toString());
+					firstChange = false;
+					change = false;
+				}
+				else {
+					try {
+						if (change) {
+							url = new URL(target);
+							change = false;
+						}
+						conn = url.openConnection();
+						String date = conn.getHeaderField("Date");
+						printLabel.setText(date);
+						StringTokenizer st = new StringTokenizer(date, " ,:");
+						String dayS = st.nextToken();
+						String dayN = st.nextToken();
+						String month = st.nextToken();
+						String year = st.nextToken();
+						sHour = Integer.toString((Integer.parseInt(st.nextToken()) + 9) % 24);
+						if (sHour.length() < 2)
+							sHour = "0" + sHour;
+						sMin = st.nextToken();
+						sSec = st.nextToken();
+					}
+					catch(IOException e) {
+						timeLabel.setText("에러 발생. 프로그램 재부팅 요망");
+					}
+				}
+				timeLabel.setText(sHour + " : " + sMin + " : " + sSec);
+					
+				try {
+					Thread.sleep(1000);
+				} catch(Exception e) {
+					System.out.println("에러가 발생했습니다.");
+					return;
+				}
+			}
+		}
+		public void changeTarget(JTextField tf) {
+			this.tf = tf;
+		}
+		public void changeChange(boolean change) {
+			this.change = change;
+			firstChange = true;
+		}
+	}
+
+
 	public Timer() {
 		setTitle("서버 시간 알아보기");
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
